@@ -1,46 +1,33 @@
-import uvicorn
-from fastapi import FastAPI
-from pydantic import BaseModel
-import pymongo
+from urllib import request, parse
+from time import sleep
+from random import randint
+import json
 
-app = FastAPI()
+def prepare_data(data1, data2):
+	data = {
+		"data1": data1,
+		"data2": data2
+	}
+	params = json.dumps(data).encode()
+	return params
 
-myclient = pymongo.MongoClient("mongodb+srv://iot:iot@cluster0.ftx0nvn.mongodb.net/?retryWrites=true&w=majority")
-mydb = myclient["Mydata"]
-mycol = mydb["sensordata"]
-id = 0
+# ess Output respone_data Chuoi du lieu nhan ve tu Server Thing speak lot 
+def my_post(params):
+# o Tạo Header trong giao thuc HTTP POST
+	req = request.Request('http://35.221.87.87/update_post', method="POST") 
+	req.add_header("accept", "application/json")
+	req.add_header("Content-Type", "application/json")
+	r = request.urlopen(req, data = params)
+	respone_data = r.read()
+	return respone_data
 
-class Item(BaseModel):
-    data1: float
-    data2: float
+while True:
+	data_random1 = randint(0,50) # Tạo các gia tri du lieu ngau nhien
+	data_random2 = randint(0,50) # Tạo các gia tri du lieu ngau nhien
 
-@app.get("/")
-def root():
-    return {"message": "Hello Word!"}
+	params = prepare_data(data_random1, data_random2)
+	print(params)
 
-@app.get("/updates")
-async def update_data(data1: float, data2: float):
-    return {"temp: ": data1, "humi: ": data2}
-
-@app.get("/get")
-async def update_data():
-    x = mycol.find_one()
-    data_return = {
-        "temp: ": x['temp'],
-        "humi: ": x['humi']
-    }
-    print(data_return)
-    return data_return
-
-@app.post("/update_post")
-async def update_data_post(item: Item):
-    mydict = {
-        "temp": int(item.data1),
-        "humi": int(item.data2)
-    }
-    # print(mydict)
-    mycol.insert_one(mydict)
-    return "OK"
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=80)
+	print(my_post(params))
+	
+	sleep(30)
